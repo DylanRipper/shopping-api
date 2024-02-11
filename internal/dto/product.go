@@ -9,7 +9,7 @@ type (
 		SubcategoryID int    `json:"subcategory_id" form:"subcategory_id"`
 		CityID        int    `json:"city_id" form:"city_id"`
 		Price         int    `gorm:"not null" json:"price" form:"price"`
-		Description   string `gorm:"type:longtext;not null" json:"description" form:"description"`
+		Description   string `gorm:"type:text;not null" json:"description" form:"description"`
 		Stock         int    `gorm:"type:int;default:1" json:"stock" form:"stock"`
 		Guarantee     []int  `json:"guarantee" form:"guarantee"`
 	}

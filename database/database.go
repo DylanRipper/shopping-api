@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"shopping-api/internal/model"
 	"shopping-api/pkg/util"
 	"sync"
 
@@ -43,5 +44,21 @@ func GetConnection() *gorm.DB {
 		fmt.Println(err)
 	}
 
+	InitMigrate(db)
+
 	return db
+}
+
+func InitMigrate(DB *gorm.DB) {
+	DB.AutoMigrate(&model.Category{})
+	DB.AutoMigrate(&model.Subcategory{})
+	DB.AutoMigrate(&model.Province{})
+	DB.AutoMigrate(&model.City{})
+	DB.AutoMigrate(&model.Users{})
+	DB.AutoMigrate(&model.Photos{})
+	DB.AutoMigrate(&model.Products{})
+	DB.AutoMigrate(&model.Cart{})
+	DB.AutoMigrate(&model.Transaction{})
+	DB.AutoMigrate(&model.Booking{})
+	DB.AutoMigrate(&model.Reviews{})
 }

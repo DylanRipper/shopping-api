@@ -12,7 +12,7 @@ type Products struct {
 	SubcategoryID int       `json:"subcategory_id" form:"subcategory_id"`
 	CityID        int       `json:"city_id" form:"city_id"`
 	Price         int       `gorm:"not null" json:"price" form:"price"`
-	Description   string    `gorm:"type:longtext;not null" json:"description" form:"description"`
+	Description   string    `gorm:"type:text;not null" json:"description" form:"description"`
 	Stock         int       `gorm:"type:int;default:1" json:"stock" form:"stock"`
 	Longitude     float64   `gorm:"type:varchar(30);not null" json:"lon" form:"lon"`
 	Latitude      float64   `gorm:"type:varchar(30);not null" json:"lat" form:"lat"`
