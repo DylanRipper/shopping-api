@@ -101,11 +101,10 @@ Cart merupakan fitur untuk menampung berbagai product yang akan dibeli oleh user
   | Command | Description |
 | --- | --- |
   --->
-Setelah user melakukan pencarian product yang dibutuhkan dengan berbagai jaminan yang dibutuhkan, user melakukan booking dengan melakukan pengecekan tanggal diawal, jika sistem merespon product yang dimaksud "avalaible", user baru dapat melakukan booking.  
+Setelah user melakukan pencarian product yang akan dibeli, user melakukan booking barang ke dalam cart.  
   
 | Feature booking | Endpoint | Param | JWT Token | Fungsi |
 | --- | --- | --- | --- | --- |
-| POST | /booking/check/:id | id | YES | Melakukan cek ketersediaan product tertentu berdasarkan tanggal time-in dan time-out |
 | POST | /booking | - | YES | Membuat booking product |
 | GET | /booking/:id | id | YES | Mendapatkan informasi booking berdasarkan booking id |
 | DEL | /booking/:id | id | YES | Melakukan cancel booking berdasarkan booking id |
