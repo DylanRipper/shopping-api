@@ -9,20 +9,31 @@ import (
 	"shopping-api/internal/repository"
 	"shopping-api/pkg/helper"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Service interface {
+	CreateProduct(body dto.BodyCreateProducts, userID int) (code int, err error)
+	GetAllProducts() (interface{}, error)
+	GetProductByID(productID int) (product *dto.GetProduct, err error)
+	GetProductsBySubcategoryID(subCategoryID int) (interface{}, error)
+	GetProductsByUserID(userID int) (interface{}, error)
+	DeleteProductByID(productID, userID int) error
+	GetProductsByName(name string) (interface{}, error)
 }
 
 type service struct {
 	ProductRepository repository.Product
 	CityRepository    repository.City
+	PhotoRepository   repository.Photo
 }
 
 func NewService(f *factory.Factory) Service {
 	return &service{
 		ProductRepository: f.ProductRepository,
 		CityRepository:    f.CityRepository,
+		PhotoRepository:   f.PhotoRepository,
 	}
 }
 
@@ -53,13 +64,13 @@ func (s *service) CreateProduct(body dto.BodyCreateProducts, userID int) (code i
 	product.Longitude = long
 	product.Latitude = lat
 
-	// bucket := "rentz-id" //your bucket name
+	// bucket := util.GetEnv("GOOGLE_BUCKET_NAME", "") //your bucket name
 
 	// ctx := appengine.NewContext(c.Request())
 
 	// storageClient, err := storage.NewClient(ctx, option.WithCredentialsFile("keys.json"))
 	// if err != nil {
-	// 	return c.JSON(http.StatusInternalServerError, response.UploadErrorResponse(err))
+	// 	return http.StatusInternalServerError, err
 	// }
 
 	// // Multipart form
@@ -70,21 +81,19 @@ func (s *service) CreateProduct(body dto.BodyCreateProducts, userID int) (code i
 
 	// files := form.File["photos"]
 	// if files == nil {
-	// 	return c.JSON(http.StatusBadRequest, response.ProductsBadGatewayResponse("must add photo"))
+	// 	return http.StatusInternalServerError, errors.New("missing photos")
 	// }
 
-	// createdProduct, err := databases.CreateProduct(&product)
-	// if err != nil {
-	// 	return c.JSON(http.StatusBadRequest, response.BadRequestResponse())
-	// }
+	_, err = s.ProductRepository.CreateProduct(&product)
+	if err != nil {
+		logrus.Error(err)
+		return http.StatusInternalServerError, err
+	}
 
 	// for _, file := range files {
 	// 	if file.Size > constant.MAX_UPLOAD_SIZE {
 	// 		databases.DeleteProduct(int(createdProduct.ID))
-	// 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-	// 			"code":    http.StatusBadRequest,
-	// 			"message": "The uploaded image is too big. Please use an image less than 1MB in size",
-	// 		})
+	// 		return http.StatusBadRequest, errors.New("size image is too big")
 	// 	}
 
 	// 	src, err := file.Open()
@@ -96,26 +105,23 @@ func (s *service) CreateProduct(body dto.BodyCreateProducts, userID int) (code i
 	// 	if file.Filename[len(file.Filename)-3:] != "jpg" && file.Filename[len(file.Filename)-3:] != "png" {
 	// 		if file.Filename[len(file.Filename)-4:] != "jpeg" {
 	// 			databases.DeleteProduct(int(createdProduct.ID))
-	// 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-	// 				"code":    http.StatusBadRequest,
-	// 				"message": "The provided file format is not allowed. Please upload a JPG or JPEG or PNG image",
-	// 			})
+	// 			return http.StatusBadRequest, errors.New("format image is invalid")
 	// 		}
 	// 	}
 
 	// 	sw := storageClient.Bucket(bucket).Object(file.Filename).NewWriter(ctx)
 
 	// 	if _, err := io.Copy(sw, src); err != nil {
-	// 		return c.JSON(http.StatusInternalServerError, response.UploadErrorResponse(err))
+	// 		return http.StatusInternalServerError, err
 	// 	}
 
 	// 	if err := sw.Close(); err != nil {
-	// 		return c.JSON(http.StatusInternalServerError, response.UploadErrorResponse(err))
+	// 		return http.StatusInternalServerError, err
 	// 	}
 
 	// 	u, err := url.Parse("https://storage.googleapis.com/" + bucket + "/" + sw.Attrs().Name)
 	// 	if err != nil {
-	// 		return c.JSON(http.StatusInternalServerError, response.UploadErrorResponse(err))
+	// 		return http.StatusInternalServerError, err
 	// 	}
 	// 	photo := models.Photos{
 	// 		Photo_Name: sw.Attrs().Name,
@@ -124,21 +130,9 @@ func (s *service) CreateProduct(body dto.BodyCreateProducts, userID int) (code i
 	// 	}
 	// 	_, err = databases.InsertPhoto(&photo)
 	// 	if err != nil {
-	// 		return c.JSON(http.StatusBadRequest, response.BadRequestResponse())
+	// 		return http.StatusInternalServerError, err
 	// 	}
 
-	// }
-
-	// // add product guarantee
-	// for _, guarantee := range body.Guarantee {
-	// 	var input = models.ProductsGuarantee{
-	// 		ProductsID:  createdProduct.ID,
-	// 		GuaranteeID: uint(guarantee),
-	// 	}
-	// 	_, err := databases.InsertGuarantee(&input)
-	// 	if err != nil {
-	// 		return c.JSON(http.StatusBadRequest, response.BadRequestResponse())
-	// 	}
 	// }
 
 	// return c.JSON(http.StatusOK, map[string]interface{}{
@@ -149,4 +143,73 @@ func (s *service) CreateProduct(body dto.BodyCreateProducts, userID int) (code i
 
 	return http.StatusOK, nil
 
+}
+
+func (s *service) GetAllProducts() (interface{}, error) {
+	product, err := s.ProductRepository.GetAllProducts()
+	if err != nil {
+		return nil, err
+	}
+	if product == nil {
+		return nil, nil
+	}
+
+	return product, nil
+}
+
+func (s *service) GetProductByID(productID int) (product *dto.GetProduct, err error) {
+	product, err = s.ProductRepository.GetProductByID(uint(productID))
+	if err != nil {
+		return nil, err
+	}
+
+	product.Url, _ = s.PhotoRepository.GetUrl(uint(productID))
+
+	return product, nil
+}
+
+func (s *service) GetProductsBySubcategoryID(subCategoryID int) (interface{}, error) {
+	product, err := s.ProductRepository.GetProductsBySubcategoryID(subCategoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	return product, nil
+}
+
+func (s *service) GetProductsByUserID(userID int) (interface{}, error) {
+	product, err := s.ProductRepository.GetProductsByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return product, nil
+}
+
+func (s *service) DeleteProductByID(productID, userID int) error {
+
+	userId, err := s.ProductRepository.GetProductOwner(productID)
+	if err != nil {
+		return err
+	}
+
+	if userID != userId {
+		return errors.New("access forbidden")
+	}
+
+	_, err = s.ProductRepository.DeleteProductByID(productID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) GetProductsByName(name string) (interface{}, error) {
+	product, err := s.ProductRepository.GetProductsByName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return product, nil
 }
